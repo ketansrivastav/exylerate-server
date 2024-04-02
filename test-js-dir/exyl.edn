@@ -1,1 +1,3 @@
-{:first "first"}
+{:project-name "example"
+ :handler-path {
+                :http "./handlers/http/"}}

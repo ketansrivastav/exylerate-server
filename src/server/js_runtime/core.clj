@@ -1,16 +1,52 @@
 (ns server.js-runtime.core
   (:import [java.util Date]
-           (org.graalvm.polyglot Context Value Source)
+           (org.graalvm.polyglot Engine Context Value Source)
            (org.graalvm.polyglot.proxy ProxyArray ProxyExecutable ProxyObject)))
 
-(def context
-  (-> (Context/newBuilder (into-array ["js"]))
-      (.allowIO true)
-      (.allowHostAccess true)
-      (.build)))
+(defn get-js-source
+  "returns a Source object of user handlers and lib"
+  [files]
+  (Source/create "js" " var tmp = 2+1;"))
 
-(defn eval-js [code]
+(defn eval-js [code context]
   (.eval ^Context context "js" code))
+
+(defn init-context-factory [js-source]
+  (let [!engine (Engine/create)]
+    (fn []
+      (let [
+            !context (-> (Context/newBuilder (into-array ["js"]))
+                         (.allowIO true)
+                         (.allowHostAccess true)
+                         (.engine !engine)
+                         (.build))
+            compiled-source js-source]
+
+        ; inject source into the context --> context from same engines should have cached the source
+        (.eval ^Context !context compiled-source)
+        !context))))
+
+(comment
+  (let [new-req #(let [get-new-context (init-context-factory)]
+                   (->> (get-new-context)
+                        (eval-js (str " function settime (){
+                          var startTime = Date.now();
+                          var endTime = startTime + " % "; // Run the loop for 5 seconds
+
+                          // Loop until the current time exceeds the end time
+                          while (Date.now() < endTime) {
+                          // Perform some computation
+                          // This could be any operation that consumes CPU time
+                          // For example, performing mathematical calculations or string manipulations
+                          }; console.log(\"from js" % "now \") }; settime() ")))
+                   (str "from clj" %))
+
+        t1 (future (new-req 5000))
+        t2 (future (new-req 2000))]
+    (println @t2)
+    (println @t1))
+
+  nil)
 
 ; (defn eval-module [src module-name]
 ;   (.eval ^Context context (.build (Source/newBuilder "js" src module-name))))
@@ -54,7 +90,6 @@
 
 ; writeFileAsync('./file.txt', 'text').then (d=>console.log('done')).catch(e=>console.log(e))             
 
-;                  "))
 ; (defn foo [] (println "hello"))
 ; (future)
 ; (comment
