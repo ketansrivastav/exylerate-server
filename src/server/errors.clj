@@ -5,9 +5,9 @@
 (defn handle-runtime-error [[val err]]
   (if (instance? RuntimeError err)
     (condp = (:error-type err)
-      :fatal (println "exiting")
+      :fatal (println (:message err) "exiting (1")
       "unhandled error -- this should never happen")
-    val))
+    [val err]))
 (defn !print-and-exit [error])
 
 (defn apply-or-error [f [val err]]

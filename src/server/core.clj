@@ -7,16 +7,17 @@
 
 (defn- init []
   (timbre/merge-config! {:level :info
-                         :output-fn #(println %2)
+                         :output-fn (fn [args]
+                                      (apply println (:vargs args)))
                          :appenders {:console {:min-level :debug
                                                :auto-flush? true}}}))
 
 (defn -main
   [& args]
   (init)
-  (let [args-map (apply array-map #_args [])
-        edn-config (errors/try->or-error "/home/ketan/code/exylerate/server/test-js-dir/exyl.edn" #_(get args-map "--config")
-                                         loader/load-edn-config)
+  (let [args-map (apply array-map args)
+        edn-config (first (errors/try->or-error (get args-map "--config")
+                                                loader/load-edn-config))
         get-new-context (->> edn-config
                              (select-keys [:js-path])
                              (loader/load-user-js)
@@ -26,6 +27,12 @@
                           (let [current-context (get-new-context)]
                             (js-runtime/eval-js current-context (str js-fun "();")) ;; --> return the value
                             ))]
-    ;;bootstrap http routes 
-    ))
+    ;;bootstrap http routes
+    ;; create vector of APIs from directory structure
 
+    edn-config))
+
+(comment
+  (-main "--config" "/home/ketan/code/exylerate/server/test-js-dir/exyl.edn")
+
+  nil)

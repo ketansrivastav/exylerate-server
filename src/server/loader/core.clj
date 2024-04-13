@@ -3,7 +3,7 @@
   loads handelrs/modules from disk"
   (:require [clojure.edn :as edn]
             [clojure.java.io :as io]
-            [server.errors :refer [->RuntimeError]]
+            [server.errors :refer [->RuntimeError try->or-error]]
             [taoensso.timbre :as timbre]))
 
 (defn load-edn
@@ -16,25 +16,32 @@
       [(edn/read (java.io.PushbackReader. r)) nil])
 
     (catch java.io.IOException e
-      [nil (->RuntimeError :fatal (str "Couldn't open '%s': %s\n" source (.getMessage e)))])
+      [nil (->RuntimeError :fatal (str "Couldn't open " source (.getMessage e)))])
     (catch RuntimeException e
-      [nil (->RuntimeError :fatal (str "Error parsing edn file '%s': %s\n" source (.getMessage e)))])))
+      [nil (->RuntimeError :fatal (str "Error parsing edn file" source (.getMessage e)))])))
 
 (defn load-edn-config
-  ([config]
-   (try
-     (let [config (if (nil? config) "./exyl.edn" config)
-           edn (load-edn config)]
-       edn)
-     (catch Exception e
-       [nil (->RuntimeError :fatal (.getMessage e))]))))
+  [config-file]
+  (let [config (if (nil? config-file) "./exyl.edn" config-file)
+        return-vector (load-edn config)]
+    (update-in return-vector [0] #(merge % {
+                                            :project-path (.getPath (.getParentFile (.getCanonicalFile (io/file config))))}))))
+
+(defn get-all-sub-directories [src-directory]
+  (->> src-directory
+       (io/file)
+       (file-seq)
+       (filter #(true? (.isDirectory %)))))
 
 (defn load-user-js [path])
 
 (comment
   (timbre/error "hello")
-  (-> (load-edn-config "/home/ketan/code/exylerate/server/test-js-dir/exyl.edn")
-      (get-in [:handler-path :http]))
+  (try->or-error
+    "/home/ketan/code/exylerate/server/test-js-dir/exyl.edn"
+    load-edn-config
+    #_(get-in [:handler-path :http]))
   (edn/read "{:hello :whello }")
+  (concat [2 2 2 34 4] [3])
   nil)
 
