@@ -14,7 +14,6 @@
             [reitit.ring.middleware.parameters :as parameters]
             [reitit.swagger :as swagger]
             [reitit.swagger-ui :as swagger-ui]
-            [ring.adapter.jetty :as jetty]
             ;; Uncomment to use
             ; [reitit.ring.middleware.dev :as dev]
             ; [reitit.ring.spec :as spec]
@@ -140,12 +139,4 @@
                   :urls.primaryName "openapi"
                   :operationsSorter "alpha"}})
       (ring/create-default-handler))))
-
-(defn start []
-  (jetty/run-jetty #'app {:port 3000 :join? false})
-  (println "server running in port 3000"))
-
-(comment
-  (start)
-  nil)
 
