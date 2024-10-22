@@ -140,3 +140,4 @@
                   :operationsSorter "alpha"}})
       (ring/create-default-handler))))
 
+(defn create-route [path route-map])

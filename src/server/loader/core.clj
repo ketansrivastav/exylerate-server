@@ -33,8 +33,11 @@
        (file-seq)
        (filter #(true? (.isDirectory %)))))
 
-(defn load-user-js [path])
+(defn load-user-js [path]
 
+  (defn get-all-paths-and-js [path]
+
+    {"/v1/home/one" "function get(){return \"hello world \"}"}))
 (comment
   (timbre/error "hello")
   (try->or-error
